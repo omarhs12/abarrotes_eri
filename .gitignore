@@ -1,0 +1,20 @@
+# Apps Script credentials
+.clasprc.json
+apps_script/.clasp.json
+
+# Node
+node_modules/
+package-lock.json
+npm-debug.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Local secrets
+.env
+.env.local
