@@ -243,3 +243,17 @@ function test_alertasCaducidad_filtra_por_dias() {
   const r60 = alertasCaducidad(60);
   assertEqual(r60.length, 2, 'umbral 60d: LX1 y LX2');
 }
+
+function test_config_defaults_set() {
+  createSheets();
+  setConfigDefaults();
+
+  const config = getSheet('config');
+  const rows = config.getRange(2, 1, config.getLastRow() - 1, 3).getValues();
+  const map = {};
+  rows.forEach(r => { if (r[0]) map[r[0]] = r[1]; });
+
+  assertTrue(map['capacidad_pickup_kg'] !== undefined, 'capacidad_pickup_kg debe existir');
+  assertTrue(map['umbral_alerta_caducidad_dias'] !== undefined, 'umbral_alerta_caducidad_dias debe existir');
+  assertEqual(map['moneda'], 'MXN');
+}
