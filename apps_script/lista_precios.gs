@@ -84,8 +84,7 @@ function generarListaPreciosTexto() {
     const icono = iconos[cat] || '•';
     out += `${icono} *${cat.toUpperCase()}*\n`;
     items.forEach(it => {
-      const unidadStr = it.unidad ? ` ${it.unidad}` : '';
-      out += `• ${it.nombre}${unidadStr} — $${formatearPrecio(it.precio)}\n`;
+      out += `• ${it.nombre} — $${formatearPrecio(it.precio)}\n`;
     });
     out += '\n';
   });
