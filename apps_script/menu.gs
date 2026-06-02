@@ -1,6 +1,8 @@
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Abarrotes Eri')
+    .addItem('Nuevo producto', 'abrirFormularioProducto')
+    .addSeparator()
     .addItem('Recalcular inventario', 'recalcularInventario')
     .addItem('Recalcular saldos', 'recalcularSaldos')
     .addItem('Alertas de caducidad', 'mostrarAlertasCaducidad')
