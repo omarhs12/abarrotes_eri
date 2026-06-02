@@ -319,3 +319,25 @@ function test_carga_inicial_crea_compra_y_detalle() {
   const r3 = guardarLineaCargaInicial({ sku: 'NO-EXISTE', lote: 'L3', cantidad: 1 });
   assertTrue(!r3.ok, 'SKU inexistente debe rechazarse');
 }
+
+function test_ordenarProductosPorNombre() {
+  createSheets();
+  const productos = getSheet('productos');
+  if (productos.getLastRow() > 1) {
+    productos.getRange(2, 1, productos.getLastRow() - 1, productos.getLastColumn()).clearContent();
+  }
+  productos.appendRow(['Z01', 'Zanahoria', 'abarrotes', 'kg', 0.5, 20, 0, 'SI']);
+  productos.appendRow(['A01', 'Aceite', 'abarrotes', 'lt', 1, 50, 0, 'SI']);
+  productos.appendRow(['M01', 'Manzana', 'abarrotes', 'kg', 0.3, 30, 0, 'SI']);
+
+  ordenarProductosPorNombre();
+
+  const rows = productos.getRange(2, 1, 3, productos.getLastColumn()).getValues();
+  assertEqual(rows[0][1], 'Aceite', 'primero debe ser Aceite');
+  assertEqual(rows[1][1], 'Manzana', 'segundo debe ser Manzana');
+  assertEqual(rows[2][1], 'Zanahoria', 'tercero debe ser Zanahoria');
+  // El SKU debe acompañar a su fila correspondiente (no quedarse fijo)
+  assertEqual(rows[0][0], 'A01', 'SKU debe seguir al producto al ordenar');
+  assertEqual(rows[1][0], 'M01');
+  assertEqual(rows[2][0], 'Z01');
+}

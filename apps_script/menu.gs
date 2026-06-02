@@ -10,6 +10,13 @@ function onOpen() {
     .addItem('Lista de precios (WhatsApp)', 'exportarListaPrecios')
     .addSeparator()
     .addSubMenu(
+      SpreadsheetApp.getUi().createMenu('Ordenar A-Z')
+        .addItem('Productos por nombre', 'ordenarProductosPorNombre')
+        .addItem('Clientes por nombre', 'ordenarClientesPorNombre')
+        .addItem('Proveedores por nombre', 'ordenarProveedoresPorNombre')
+    )
+    .addSeparator()
+    .addSubMenu(
       SpreadsheetApp.getUi().createMenu('Setup (admin)')
         .addItem('Crear/reinicializar hojas', 'createSheets')
         .addItem('Aplicar validaciones', 'setupValidations')
