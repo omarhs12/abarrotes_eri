@@ -194,3 +194,27 @@ function test_recalcularInventario_basic() {
   assertEqual(byLote['L2'][2], 5, 'L2 debe ser 5');
   assertTrue(byLote['L3'] === undefined, 'L3 cross-dock NO debe estar en inventario');
 }
+
+function test_recalcularSaldos_llena_saldo_post() {
+  createSheets();
+  const ledger = getSheet('ledger_credito');
+
+  // Limpiar
+  if (ledger.getLastRow() > 1) {
+    ledger.getRange(2, 1, ledger.getLastRow() - 1, ledger.getLastColumn()).clearContent();
+  }
+
+  // Cargar 3 movimientos del cliente CLI-1
+  ledger.appendRow(['L-1', '2026-06-01', 'CLI-1', 'cargo',  'V-1', 1500, '']);
+  ledger.appendRow(['L-2', '2026-06-02', 'CLI-1', 'abono',  'pago efectivo', 500, '']);
+  ledger.appendRow(['L-3', '2026-06-03', 'CLI-1', 'cargo',  'V-2', 800, '']);
+
+  recalcularSaldos();
+
+  // saldo_post de L-1=1500, L-2=1000, L-3=1800
+  const rows = ledger.getRange(2, 1, 3, ledger.getLastColumn()).getValues();
+  const colSaldoPost = getColumnIndex('ledger_credito', 'saldo_post') - 1;
+  assertEqual(rows[0][colSaldoPost], 1500, 'L-1 saldo_post');
+  assertEqual(rows[1][colSaldoPost], 1000, 'L-2 saldo_post');
+  assertEqual(rows[2][colSaldoPost], 1800, 'L-3 saldo_post');
+}
