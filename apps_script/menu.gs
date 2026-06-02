@@ -2,6 +2,7 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('Abarrotes Eri')
     .addItem('Nuevo producto', 'abrirFormularioProducto')
+    .addItem('Nuevo cliente', 'abrirFormularioCliente')
     .addItem('Carga inicial inventario', 'abrirFormularioCargaInicial')
     .addSeparator()
     .addItem('Recalcular inventario', 'recalcularInventario')

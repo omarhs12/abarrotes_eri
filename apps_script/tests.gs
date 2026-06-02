@@ -341,3 +341,78 @@ function test_ordenarProductosPorNombre() {
   assertEqual(rows[1][0], 'M01');
   assertEqual(rows[2][0], 'Z01');
 }
+
+function test_guardarCliente_contado_sin_saldo() {
+  createSheets();
+  const clientes = getSheet('clientes');
+  const ledger = getSheet('ledger_credito');
+  [clientes, ledger].forEach(s => {
+    if (s.getLastRow() > 1) s.getRange(2, 1, s.getLastRow() - 1, s.getLastColumn()).clearContent();
+  });
+
+  const r = guardarClienteDesdeFormulario({
+    id_cliente: 'C100', nombre: 'Test Contado', contacto: '555-1234',
+    tipo: 'contado', limite_credito: 0, saldo_pendiente: 0, activo: 'SI'
+  });
+  assertTrue(r.ok, 'cliente contado se debe guardar');
+  assertTrue(r.saldoCreado === null, 'no debe crear movimiento en ledger');
+
+  // Verificar fila en clientes
+  const row = clientes.getRange(2, 1, 1, clientes.getLastColumn()).getValues()[0];
+  assertEqual(row[0], 'C100');
+  assertEqual(row[1], 'Test Contado');
+  assertEqual(row[3], 'contado');
+}
+
+function test_guardarCliente_credito_con_saldo_inicial() {
+  createSheets();
+  const clientes = getSheet('clientes');
+  const ledger = getSheet('ledger_credito');
+  [clientes, ledger].forEach(s => {
+    if (s.getLastRow() > 1) s.getRange(2, 1, s.getLastRow() - 1, s.getLastColumn()).clearContent();
+  });
+
+  const r = guardarClienteDesdeFormulario({
+    id_cliente: 'C200', nombre: 'Test Credito', contacto: '555-5678',
+    tipo: 'credito', limite_credito: 5000, saldo_pendiente: 1500, activo: 'SI'
+  });
+  assertTrue(r.ok, 'cliente credito debe guardarse');
+  assertTrue(r.saldoCreado !== null, 'debe haber creado movimiento en ledger');
+  assertEqual(r.saldoCreado.monto, 1500);
+
+  // Verificar fila en ledger
+  const ledgerRow = ledger.getRange(2, 1, 1, ledger.getLastColumn()).getValues()[0];
+  assertTrue(ledgerRow[0].indexOf('L-') === 0, 'folio L-N asignado');
+  assertEqual(ledgerRow[2], 'C200', 'cliente_id correcto');
+  assertEqual(ledgerRow[3], 'cargo', 'tipo cargo');
+  assertEqual(ledgerRow[4], 'saldo inicial', 'referencia saldo inicial');
+  assertEqual(ledgerRow[5], 1500, 'monto');
+}
+
+function test_guardarCliente_dedup() {
+  createSheets();
+  const clientes = getSheet('clientes');
+  if (clientes.getLastRow() > 1) clientes.getRange(2, 1, clientes.getLastRow() - 1, clientes.getLastColumn()).clearContent();
+
+  const r1 = guardarClienteDesdeFormulario({
+    id_cliente: 'C300', nombre: 'Primero', tipo: 'contado', limite_credito: 0, saldo_pendiente: 0, activo: 'SI'
+  });
+  assertTrue(r1.ok);
+
+  const r2 = guardarClienteDesdeFormulario({
+    id_cliente: 'C300', nombre: 'Duplicado', tipo: 'contado', limite_credito: 0, saldo_pendiente: 0, activo: 'SI'
+  });
+  assertTrue(!r2.ok, 'segundo intento debe rechazarse por id duplicado');
+}
+
+function test_guardarCliente_rechaza_saldo_sin_credito() {
+  createSheets();
+  const clientes = getSheet('clientes');
+  if (clientes.getLastRow() > 1) clientes.getRange(2, 1, clientes.getLastRow() - 1, clientes.getLastColumn()).clearContent();
+
+  const r = guardarClienteDesdeFormulario({
+    id_cliente: 'C400', nombre: 'Contado con saldo', tipo: 'contado',
+    limite_credito: 0, saldo_pendiente: 500, activo: 'SI'
+  });
+  assertTrue(!r.ok, 'cliente contado con saldo pendiente debe rechazarse');
+}
