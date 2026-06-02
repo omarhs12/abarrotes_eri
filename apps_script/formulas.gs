@@ -13,6 +13,11 @@ function setupClientesSaldoFormula() {
 
   // Construir TODAS las formulas en memoria y escribirlas en UNA llamada batch
   // (setFormulas en un range es ~100x mas rapido que setFormula fila por fila).
+  //
+  // OJO: las letras C/D/F abajo son indices DUROS al esquema actual de ledger_credito:
+  //   C = cliente_id, D = tipo, F = monto.
+  // Si en el futuro se reordenan o insertan columnas en ledger_credito, esta formula
+  // lee columnas equivocadas SIN error. Antes de tocar ese SCHEMA, actualizar aqui.
   const formulas = [];
   for (let row = 2; row <= MAX_ROWS_FOR_FORMULAS; row++) {
     const idRef = `${idColLetter}${row}`;
