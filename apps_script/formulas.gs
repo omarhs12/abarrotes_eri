@@ -11,16 +11,18 @@ function setupClientesSaldoFormula() {
   const colIdCliente = getColumnIndex('clientes', 'id_cliente');
   const idColLetter = columnToLetter(colIdCliente);
 
-  // Para cada fila n de clientes:
-  // saldo_actual = SUMIFS(ledger.monto WHERE id_cliente=ID AND tipo=cargo)
-  //              - SUMIFS(ledger.monto WHERE id_cliente=ID AND tipo=abono)
+  // Construir TODAS las formulas en memoria y escribirlas en UNA llamada batch
+  // (setFormulas en un range es ~100x mas rapido que setFormula fila por fila).
+  const formulas = [];
   for (let row = 2; row <= MAX_ROWS_FOR_FORMULAS; row++) {
     const idRef = `${idColLetter}${row}`;
-    const formula = `=IF(${idRef}="","",`
+    formulas.push([
+      `=IF(${idRef}="","",`
       + `SUMIFS(ledger_credito!F:F, ledger_credito!C:C, ${idRef}, ledger_credito!D:D, "cargo")`
-      + ` - SUMIFS(ledger_credito!F:F, ledger_credito!C:C, ${idRef}, ledger_credito!D:D, "abono"))`;
-    clientes.getRange(row, colSaldo).setFormula(formula);
+      + ` - SUMIFS(ledger_credito!F:F, ledger_credito!C:C, ${idRef}, ledger_credito!D:D, "abono"))`
+    ]);
   }
+  clientes.getRange(2, colSaldo, MAX_ROWS_FOR_FORMULAS - 1, 1).setFormulas(formulas);
 }
 
 function columnToLetter(col) {
