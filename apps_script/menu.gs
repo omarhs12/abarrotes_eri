@@ -6,6 +6,7 @@ function onOpen() {
     .addItem('Recalcular inventario', 'recalcularInventario')
     .addItem('Recalcular saldos', 'recalcularSaldos')
     .addItem('Alertas de caducidad', 'mostrarAlertasCaducidad')
+    .addItem('Lista de precios (WhatsApp)', 'exportarListaPrecios')
     .addSeparator()
     .addSubMenu(
       SpreadsheetApp.getUi().createMenu('Setup (admin)')

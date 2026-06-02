@@ -219,6 +219,25 @@ function test_recalcularSaldos_llena_saldo_post() {
   assertEqual(rows[2][colSaldoPost], 1800, 'L-3 saldo_post');
 }
 
+function test_generarListaPreciosTexto_basico() {
+  createSheets();
+  const productos = getSheet('productos');
+  if (productos.getLastRow() > 1) {
+    productos.getRange(2, 1, productos.getLastRow() - 1, productos.getLastColumn()).clearContent();
+  }
+  productos.appendRow(['FRIJ-1', 'Frijol bayo 1kg', 'abarrotes', 'kg', 1, 35, 0, 'SI']);
+  productos.appendRow(['COCA-600', 'Coca cola 600ml', 'bebidas', 'pza', 0.7, 18, 0, 'SI']);
+  productos.appendRow(['INACTIVO', 'No debe aparecer', 'abarrotes', 'pza', 0, 99, 0, 'NO']);
+
+  const texto = generarListaPreciosTexto();
+  assertTrue(texto.indexOf('Frijol bayo 1kg') !== -1, 'producto activo debe estar en la lista');
+  assertTrue(texto.indexOf('Coca cola 600ml') !== -1, 'segundo producto activo debe estar');
+  assertTrue(texto.indexOf('No debe aparecer') === -1, 'producto inactivo NO debe aparecer');
+  assertTrue(texto.indexOf('ABARROTES') !== -1, 'categoria abarrotes debe aparecer');
+  assertTrue(texto.indexOf('BEBIDAS') !== -1, 'categoria bebidas debe aparecer');
+  assertTrue(texto.indexOf('35.00') !== -1, 'precio formateado debe aparecer');
+}
+
 function test_alertasCaducidad_filtra_por_dias() {
   createSheets();
   const inv = getSheet('inventario');
