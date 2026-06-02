@@ -74,3 +74,14 @@ function test_runner_smoke() {
   assertDeepEqual([1, 2], [1, 2]);
   assertThrows(() => { throw new Error('intentional'); });
 }
+
+function test_createSheets_creates_all_12() {
+  createSheets();
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  SCHEMA.forEach(s => {
+    const sheet = ss.getSheetByName(s.name);
+    assertTrue(sheet !== null, `Hoja ${s.name} no se creo`);
+    const headers = sheet.getRange(1, 1, 1, s.headers.length).getValues()[0];
+    assertDeepEqual(headers, s.headers, `Headers de ${s.name}`);
+  });
+}
