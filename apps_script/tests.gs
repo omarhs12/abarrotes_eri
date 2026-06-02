@@ -218,3 +218,28 @@ function test_recalcularSaldos_llena_saldo_post() {
   assertEqual(rows[1][colSaldoPost], 1000, 'L-2 saldo_post');
   assertEqual(rows[2][colSaldoPost], 1800, 'L-3 saldo_post');
 }
+
+function test_alertasCaducidad_filtra_por_dias() {
+  createSheets();
+  const inv = getSheet('inventario');
+  if (inv.getLastRow() > 1) {
+    inv.getRange(2, 1, inv.getLastRow() - 1, inv.getLastColumn()).clearContent();
+  }
+
+  // hoy = 2026-06-01 segun el contexto del proyecto. Calculamos relativo a Date.now().
+  const today = new Date();
+  const in3days = new Date(today.getTime() + 3 * 24 * 3600 * 1000);
+  const in30days = new Date(today.getTime() + 30 * 24 * 3600 * 1000);
+  const in100days = new Date(today.getTime() + 100 * 24 * 3600 * 1000);
+
+  inv.appendRow(['SKU-X', 'LX1', 5, in3days, 10, '']);
+  inv.appendRow(['SKU-X', 'LX2', 5, in30days, 10, '']);
+  inv.appendRow(['SKU-X', 'LX3', 5, in100days, 10, '']);
+
+  const r7 = alertasCaducidad(7);
+  assertEqual(r7.length, 1, 'umbral 7d: solo LX1');
+  assertEqual(r7[0].lote, 'LX1');
+
+  const r60 = alertasCaducidad(60);
+  assertEqual(r60.length, 2, 'umbral 60d: LX1 y LX2');
+}
