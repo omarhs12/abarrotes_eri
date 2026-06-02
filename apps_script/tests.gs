@@ -101,3 +101,14 @@ function test_validations_reject_invalid_enum() {
   const values = rule.getCriteriaValues()[0];
   assertDeepEqual(values, ['abarrotes', 'bebidas', 'limpieza', 'papel', 'otros']);
 }
+
+function test_setupFormulas_saldo_actual() {
+  createSheets();
+  setupFormulas();
+
+  const clientes = getSheet('clientes');
+  const colSaldo = getColumnIndex('clientes', 'saldo_actual');
+  const formula = clientes.getRange(2, colSaldo).getFormula();
+  assertTrue(formula.length > 0, 'clientes.saldo_actual debe tener formula');
+  assertTrue(formula.indexOf('ledger_credito') !== -1, 'la formula debe referenciar ledger_credito');
+}
