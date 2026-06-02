@@ -161,3 +161,36 @@ function test_assignFolio_idempotent() {
   assignFolio(event);
   assertEqual(compras.getRange(2, colId).getValue(), 'C-1', 'folio no debe reasignarse');
 }
+
+function test_recalcularInventario_basic() {
+  createSheets();
+  const comprasDet = getSheet('compras_detalle');
+  const ventasDet = getSheet('ventas_detalle');
+  const inv = getSheet('inventario');
+
+  // Limpiar
+  [comprasDet, ventasDet, inv].forEach(sheet => {
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+    }
+  });
+
+  // Cargar datos: compra de 10 unidades de SKU-A lote L1, caducidad 2026-12-31, costo 5.0, destino inventario
+  comprasDet.appendRow(['C-1', 'SKU-A', 'L1', 10, 5.0, '2026-12-31', 'inventario']);
+  // Compra de 5 unidades lote L2 caducidad 2026-08-15
+  comprasDet.appendRow(['C-2', 'SKU-A', 'L2', 5, 5.0, '2026-08-15', 'inventario']);
+  // Compra cross-dock no debe contar
+  comprasDet.appendRow(['C-3', 'SKU-A', 'L3', 100, 5.0, '2027-01-01', 'cross_dock_CLI-1']);
+  // Venta de 3 del lote L1
+  ventasDet.appendRow(['V-1', 'SKU-A', 'L1', 3, 8.0, 0]);
+
+  recalcularInventario();
+
+  // Esperado: L1 = 10-3 = 7; L2 = 5; L3 NO debe aparecer
+  const rows = inv.getRange(2, 1, inv.getLastRow() - 1, inv.getLastColumn()).getValues();
+  const byLote = {};
+  rows.forEach(r => { if (r[0]) byLote[r[1]] = r; });
+  assertEqual(byLote['L1'][2], 7, 'L1 debe ser 7');
+  assertEqual(byLote['L2'][2], 5, 'L2 debe ser 5');
+  assertTrue(byLote['L3'] === undefined, 'L3 cross-dock NO debe estar en inventario');
+}
