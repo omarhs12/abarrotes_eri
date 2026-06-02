@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 12px; font-size: 14px; }
+    .row { margin-bottom: 10px; }
+    label { display: block; font-weight: bold; margin-bottom: 3px; }
+    input { width: 100%; padding: 6px; box-sizing: border-box; font-size: 14px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn { padding: 8px 14px; font-size: 14px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #4285f4; color: white; }
+    .btn-secondary { background: #fff; color: #333; }
+    .btn-success { background: #1e8e3e; }
+    .msg { padding: 8px; border-radius: 4px; margin-top: 10px; font-size: 13px; }
+    .ok { background: #e6f4ea; color: #1e8e3e; }
+    .err { background: #fce8e6; color: #c5221f; }
+    .counter { color: #666; font-size: 12px; margin-top: 8px; }
+    .hint { color: #666; font-size: 12px; margin-bottom: 12px; padding: 8px; background: #fef7e0; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="hint">
+    Captura cada lote de stock fisico que ya tienes. Al cerrar el formulario, presiona <b>"Finalizar y recalcular"</b> para actualizar el inventario.
+  </div>
+  <form id="form">
+    <div class="row">
+      <label>SKU *</label>
+      <input type="text" id="sku" required autocomplete="off" autofocus />
+    </div>
+    <div class="row">
+      <label>Lote *</label>
+      <input type="text" id="lote" required autocomplete="off" placeholder="ej. 20260602-1" />
+    </div>
+    <div class="grid2">
+      <div class="row">
+        <label>Cantidad *</label>
+        <input type="number" id="cantidad" step="0.001" min="0" required />
+      </div>
+      <div class="row">
+        <label>Costo unitario</label>
+        <input type="number" id="costo_unitario" step="0.01" min="0" value="0" />
+      </div>
+    </div>
+    <div class="row">
+      <label>Caducidad (opcional)</label>
+      <input type="date" id="caducidad" />
+    </div>
+    <div class="row" style="text-align: right;">
+      <button type="button" class="btn btn-secondary" onclick="finalizar()">Finalizar y recalcular</button>
+      <button type="submit" class="btn">Agregar lote</button>
+    </div>
+    <div id="msg"></div>
+    <div class="counter" id="counter"></div>
+  </form>
+
+  <script>
+    document.getElementById('form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const data = {
+        sku: document.getElementById('sku').value,
+        lote: document.getElementById('lote').value,
+        cantidad: document.getElementById('cantidad').value,
+        costo_unitario: document.getElementById('costo_unitario').value,
+        caducidad: document.getElementById('caducidad').value
+      };
+      const btn = e.target.querySelector('button[type=submit]');
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+      google.script.run
+        .withSuccessHandler(onSaved)
+        .withFailureHandler(onError)
+        .guardarLineaCargaInicial(data);
+    });
+
+    function onSaved(result) {
+      const msg = document.getElementById('msg');
+      const btn = document.querySelector('button[type=submit]');
+      btn.disabled = false;
+      btn.textContent = 'Agregar lote';
+      if (result.ok) {
+        msg.innerHTML = '<div class="msg ok">&#10003; ' + escapeHtml(result.sku) + ' / ' + escapeHtml(result.lote) + ' &mdash; ' + result.cantidad + ' uds (folio ' + escapeHtml(result.idCompra) + ')</div>';
+        document.getElementById('sku').value = '';
+        document.getElementById('lote').value = '';
+        document.getElementById('cantidad').value = '';
+        document.getElementById('caducidad').value = '';
+        // costo se mantiene sticky para acelerar
+        document.getElementById('sku').focus();
+        actualizarContador();
+      } else {
+        msg.innerHTML = '<div class="msg err">&#10007; ' + escapeHtml(result.error) + '</div>';
+      }
+    }
+
+    function onError(err) {
+      const btn = document.querySelector('button[type=submit]');
+      btn.disabled = false;
+      btn.textContent = 'Agregar lote';
+      document.getElementById('msg').innerHTML = '<div class="msg err">&#10007; Error: ' + escapeHtml(err.message || String(err)) + '</div>';
+    }
+
+    function finalizar() {
+      const msg = document.getElementById('msg');
+      msg.innerHTML = '<div class="msg ok">Recalculando inventario...</div>';
+      google.script.run
+        .withSuccessHandler(function() {
+          msg.innerHTML = '<div class="msg ok">&#10003; Inventario recalculado. Puedes cerrar.</div>';
+        })
+        .withFailureHandler(onError)
+        .finalizarCargaInicial();
+    }
+
+    function actualizarContador() {
+      google.script.run
+        .withSuccessHandler(function(n) {
+          document.getElementById('counter').textContent = n + ' lote(s) capturado(s) en esta sesion';
+        })
+        .contarLineasCargaInicialHoy();
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+  </script>
+</body>
+</html>

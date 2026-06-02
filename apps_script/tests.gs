@@ -276,3 +276,46 @@ function test_config_defaults_set() {
   assertTrue(map['umbral_alerta_caducidad_dias'] !== undefined, 'umbral_alerta_caducidad_dias debe existir');
   assertEqual(map['moneda'], 'MXN');
 }
+
+function test_carga_inicial_crea_compra_y_detalle() {
+  createSheets();
+
+  // Limpiar compras y compras_detalle de pruebas previas
+  const compras = getSheet('compras');
+  const comprasDet = getSheet('compras_detalle');
+  [compras, comprasDet].forEach(sheet => {
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn()).clearContent();
+    }
+  });
+
+  // Necesita un producto registrado primero
+  const productos = getSheet('productos');
+  if (productos.getLastRow() > 1) {
+    productos.getRange(2, 1, productos.getLastRow() - 1, productos.getLastColumn()).clearContent();
+  }
+  productos.appendRow(['SKU-CI', 'Producto Carga Inicial', 'abarrotes', 'pza', 0.5, 20, 0, 'SI']);
+
+  // Guardar dos lineas via la API del form
+  const r1 = guardarLineaCargaInicial({ sku: 'SKU-CI', lote: 'L1', cantidad: 10, costo_unitario: 5 });
+  assertTrue(r1.ok, 'primera linea debe guardarse');
+  assertTrue(r1.idCompra.indexOf('INICIAL-') === 0, 'idCompra debe arrancar con INICIAL-');
+
+  const r2 = guardarLineaCargaInicial({ sku: 'SKU-CI', lote: 'L2', cantidad: 5, costo_unitario: 5 });
+  assertTrue(r2.ok, 'segunda linea debe guardarse');
+  assertEqual(r2.idCompra, r1.idCompra, 'ambas lineas usan el mismo folio INICIAL del dia');
+
+  // Verificar que en compras hay 1 sola fila INICIAL
+  const cRows = compras.getRange(2, 1, compras.getLastRow() - 1, compras.getLastColumn()).getValues();
+  const inicialRows = cRows.filter(r => typeof r[0] === 'string' && r[0].indexOf('INICIAL-') === 0);
+  assertEqual(inicialRows.length, 1, 'solo debe haber 1 fila INICIAL en compras');
+
+  // Verificar 2 lineas en compras_detalle
+  const dRows = comprasDet.getRange(2, 1, comprasDet.getLastRow() - 1, comprasDet.getLastColumn()).getValues();
+  const detalleRows = dRows.filter(r => r[0] === r1.idCompra);
+  assertEqual(detalleRows.length, 2, 'deben haber 2 lineas en compras_detalle');
+
+  // SKU inexistente debe fallar
+  const r3 = guardarLineaCargaInicial({ sku: 'NO-EXISTE', lote: 'L3', cantidad: 1 });
+  assertTrue(!r3.ok, 'SKU inexistente debe rechazarse');
+}
