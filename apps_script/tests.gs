@@ -85,3 +85,19 @@ function test_createSheets_creates_all_12() {
     assertDeepEqual(headers, s.headers, `Headers de ${s.name}`);
   });
 }
+
+function test_validations_reject_invalid_enum() {
+  createSheets();
+  setupValidations();
+
+  const productos = getSheet('productos');
+  // La columna 'categoria' es enum: abarrotes, bebidas, limpieza, papel, otros
+  // Intentar setear un valor invalido debe lanzar.
+  const cell = productos.getRange(2, getColumnIndex('productos', 'categoria'));
+  const rule = cell.getDataValidation();
+  assertTrue(rule !== null, 'productos.categoria debe tener data validation');
+  const criteria = rule.getCriteriaType();
+  assertEqual(criteria, SpreadsheetApp.DataValidationCriteria.VALUE_IN_LIST, 'debe ser VALUE_IN_LIST');
+  const values = rule.getCriteriaValues()[0];
+  assertDeepEqual(values, ['abarrotes', 'bebidas', 'limpieza', 'papel', 'otros']);
+}
