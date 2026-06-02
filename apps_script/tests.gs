@@ -112,3 +112,52 @@ function test_setupFormulas_saldo_actual() {
   assertTrue(formula.length > 0, 'clientes.saldo_actual debe tener formula');
   assertTrue(formula.indexOf('ledger_credito') !== -1, 'la formula debe referenciar ledger_credito');
 }
+
+function test_assignFolio_compras() {
+  createSheets();
+  const compras = getSheet('compras');
+  const colId = getColumnIndex('compras', 'id_compra');
+  const colFecha = getColumnIndex('compras', 'fecha');
+
+  // Limpiar filas de datos
+  if (compras.getLastRow() > 1) {
+    compras.getRange(2, 1, compras.getLastRow() - 1, compras.getLastColumn()).clearContent();
+  }
+
+  // Simular escritura en columna fecha de fila 2
+  compras.getRange(2, colFecha).setValue('2026-06-01');
+  const event = {
+    range: compras.getRange(2, colFecha),
+    source: SpreadsheetApp.getActiveSpreadsheet()
+  };
+  assignFolio(event);
+  const id = compras.getRange(2, colId).getValue();
+  assertEqual(id, 'C-1', 'primer folio debe ser C-1');
+
+  // Segunda fila
+  compras.getRange(3, colFecha).setValue('2026-06-02');
+  event.range = compras.getRange(3, colFecha);
+  assignFolio(event);
+  assertEqual(compras.getRange(3, colId).getValue(), 'C-2', 'segundo folio debe ser C-2');
+}
+
+function test_assignFolio_idempotent() {
+  createSheets();
+  const compras = getSheet('compras');
+  const colId = getColumnIndex('compras', 'id_compra');
+  const colFecha = getColumnIndex('compras', 'fecha');
+
+  if (compras.getLastRow() > 1) {
+    compras.getRange(2, 1, compras.getLastRow() - 1, compras.getLastColumn()).clearContent();
+  }
+
+  compras.getRange(2, colFecha).setValue('2026-06-01');
+  let event = { range: compras.getRange(2, colFecha), source: SpreadsheetApp.getActiveSpreadsheet() };
+  assignFolio(event);
+  assertEqual(compras.getRange(2, colId).getValue(), 'C-1');
+
+  // Re-disparar onEdit en la misma fila no debe reasignar
+  event.range = compras.getRange(2, colFecha);
+  assignFolio(event);
+  assertEqual(compras.getRange(2, colId).getValue(), 'C-1', 'folio no debe reasignarse');
+}
