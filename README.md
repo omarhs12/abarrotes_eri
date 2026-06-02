@@ -60,7 +60,15 @@ O ejecutar `setupAll()` desde el editor de Apps Script para correr todos los pas
 
 ### Agregar un producto nuevo
 
-1. Hoja `productos`: nueva fila. `peso_kg_unidad` es importante para el calculo de carga de la pickup.
+**Recomendado (rapido):** menu `Abarrotes Eri > Nuevo producto`. Abre un formulario con todos los campos, dedup automatico de SKU, sticky de categoria/unidad para encadenar capturas. ~10 seg por producto.
+
+Manual: hoja `productos`, nueva fila. `peso_kg_unidad` es importante para el calculo de carga de la pickup.
+
+### Generar lista de precios (WhatsApp / imprimir)
+
+Menu `Abarrotes Eri > Lista de precios (WhatsApp)`. Abre un dialogo con el texto formateado agrupado por categoria, con iconos y precios. Boton "Copiar al portapapeles" → pegas directo en WhatsApp.
+
+Solo aparecen productos `activo='SI'`.
 
 ### Ver alertas de caducidad
 
@@ -71,6 +79,46 @@ Menu `Abarrotes Eri > Alertas de caducidad`. El umbral se configura en hoja `con
 1. Hoja `compras` y `compras_detalle`: registrar la compra con `destino=cross_dock_<id_cliente>` en cada linea de detalle.
 2. Hoja `ventas` y `ventas_detalle`: registrar la venta correspondiente al mismo cliente.
 3. **No recalcular inventario para esa compra** — `recalcularInventario()` ya excluye lineas con destino distinto a `inventario`.
+
+---
+
+## Carga inicial (cuando arrancas el sistema)
+
+Antes de operacion diaria, hay que llenar los catalogos base. Orden recomendado:
+
+### 1. Productos
+
+Menu `Abarrotes Eri > Nuevo producto`. Captura los SKUs que vendes con su precio y peso. Se puede en cualquier momento, pero conviene tener al menos los principales antes de capturar compras o ventas.
+
+### 2. Proveedores
+
+Hoja `proveedores`, captura directa (es poco volumen). Columnas: id, nombre, contacto, forma_pago_default (dropdown), notas.
+
+### 3. Clientes
+
+Hoja `clientes`, captura directa. Para los clientes con `tipo=credito`, llena `limite_credito` con el credito que les das. `saldo_actual` es formula automatica — NO escribir.
+
+### 4. Saldos pendientes de clientes (deudas heredadas del periodo anterior)
+
+Si un cliente ya te debe dinero antes de empezar a usar el sistema, registra un cargo inicial en `ledger_credito`:
+
+| col | valor |
+|---|---|
+| fecha | hoy (esto dispara el folio L-N) |
+| cliente_id | id del cliente |
+| tipo | `cargo` |
+| referencia | `saldo inicial` |
+| monto | cuanto te debe hoy |
+
+`saldo_actual` del cliente se actualiza automaticamente con la formula.
+
+### 5. Inventario fisico actual
+
+Cuenta el stock que tienes en almacen, luego: menu `Abarrotes Eri > Carga inicial inventario`. Abre formulario con SKU/lote/cantidad/costo/caducidad. Cada captura crea una linea bajo el folio `INICIAL-N` (uno por dia). Al terminar de capturar todo, click **"Finalizar y recalcular"** — eso pobla la hoja `inventario`.
+
+### 6. Tarjetas (opcional, para no excederte)
+
+Hoja `tarjetas`: una fila por tarjeta de credito que uses, con fecha de corte y limite de pago. Lo consultas cuando hagas compras a MSI.
 
 ---
 
