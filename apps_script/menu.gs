@@ -30,6 +30,7 @@ function onOpen() {
         .addItem('Config: defaults', 'setConfigDefaults')
         .addItem('Instalar trigger folios', 'installFolioTrigger')
         .addItem('Recuperar clientes huerfanos', 'recuperarClientesOrfanos')
+        .addItem('Migrar SKU = nombre (productos)', 'migrarSkuAlNombre')
         .addItem('Correr todos los tests', 'runAllTests')
     )
     .addToUi();

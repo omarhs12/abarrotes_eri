@@ -19,12 +19,8 @@
 <body>
   <form id="form">
     <div class="row">
-      <label>SKU *</label>
-      <input type="text" id="sku" required autocomplete="off" autofocus />
-    </div>
-    <div class="row">
-      <label>Nombre *</label>
-      <input type="text" id="nombre" required autocomplete="off" />
+      <label>Nombre del producto *</label>
+      <input type="text" id="nombre" required autocomplete="off" autofocus placeholder="ej. Azukar Sulka 900gr c/10" />
     </div>
     <div class="grid2">
       <div class="row">
@@ -82,7 +78,6 @@
     document.getElementById('form').addEventListener('submit', function(e) {
       e.preventDefault();
       const data = {
-        sku: document.getElementById('sku').value,
         nombre: document.getElementById('nombre').value,
         categoria: document.getElementById('categoria').value,
         unidad_venta: document.getElementById('unidad_venta').value,
@@ -106,14 +101,14 @@
       btn.disabled = false;
       btn.textContent = 'Guardar y siguiente';
       if (result.ok) {
-        msg.innerHTML = '<div class="msg ok">&#x2713; Guardado: ' + escapeHtml(result.sku) + ' &mdash; ' + escapeHtml(result.nombre) + '</div>';
+        msg.innerHTML = '<div class="msg ok">&#x2713; Guardado: ' + escapeHtml(result.nombre) + '</div>';
         // Reset form for next entry (keep categoria + unidad sticky)
         const cat = document.getElementById('categoria').value;
         const unidad = document.getElementById('unidad_venta').value;
         document.getElementById('form').reset();
         document.getElementById('categoria').value = cat;
         document.getElementById('unidad_venta').value = unidad;
-        document.getElementById('sku').focus();
+        document.getElementById('nombre').focus();
         actualizarContador();
       } else {
         msg.innerHTML = '<div class="msg err">&#x2717; ' + escapeHtml(result.error) + '</div>';
