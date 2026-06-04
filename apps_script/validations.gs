@@ -52,5 +52,37 @@ function setupValidations() {
     });
   });
 
-  Logger.log(`setupValidations: validaciones aplicadas en ${Object.keys(VALIDATIONS).length} hojas`);
+  setupValidacionesLedger();
+
+  Logger.log(`setupValidations: validaciones aplicadas en ${Object.keys(VALIDATIONS).length} hojas + ledger dinamico`);
+}
+
+// Validaciones especiales de ledger_credito:
+//   - cliente_id: dropdown DINAMICO desde clientes.id_cliente (se actualiza solo)
+//   - referencia: lista sugerida con valores libres permitidos
+function setupValidacionesLedger() {
+  const ledger = getSheet('ledger_credito');
+  const colCliente = getColumnIndex('ledger_credito', 'cliente_id');
+  const colRef = getColumnIndex('ledger_credito', 'referencia');
+
+  // Dropdown dinamico para cliente_id (range-based desde clientes.id_cliente)
+  const clientes = getSheetOrNull('clientes');
+  if (clientes) {
+    const idColIdx = getColumnIndex('clientes', 'id_cliente');
+    const clientesRange = clientes.getRange(2, idColIdx, clientes.getMaxRows() - 1, 1);
+    const clienteRule = SpreadsheetApp.newDataValidation()
+      .requireValueInRange(clientesRange, true)
+      .setAllowInvalid(false)
+      .setHelpText('Selecciona un cliente existente de la hoja clientes')
+      .build();
+    ledger.getRange(2, colCliente, MAX_ROWS_FOR_VALIDATION - 1, 1).setDataValidation(clienteRule);
+  }
+
+  // Lista sugerida para referencia (permite valores libres tambien)
+  const refRule = SpreadsheetApp.newDataValidation()
+    .requireValueInList(['Inicial', 'abono', 'cargo'], true)
+    .setAllowInvalid(true)
+    .setHelpText('Sugerencias: Inicial / abono / cargo. Tambien puedes escribir libre (ej. "transferencia 12345", V-1)')
+    .build();
+  ledger.getRange(2, colRef, MAX_ROWS_FOR_VALIDATION - 1, 1).setDataValidation(refRule);
 }
