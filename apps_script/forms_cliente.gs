@@ -30,26 +30,23 @@ function guardarClienteDesdeFormulario(data) {
     return { ok: false, error: 'Solo clientes con tipo "credito" pueden tener saldo pendiente' };
   }
 
-  // Dedup id_cliente
+  // Dedup id_cliente — escanear TODA la columna porque el rango de datos puede
+  // mezclarse con celdas que solo tienen formula prellenada en saldo_actual.
   const clientes = getSheet('clientes');
-  if (clientes.getLastRow() >= 2) {
-    const idColIdx = getColumnIndex('clientes', 'id_cliente');
-    const existing = clientes.getRange(2, idColIdx, clientes.getLastRow() - 1, 1).getValues();
+  const idColIdx = getColumnIndex('clientes', 'id_cliente');
+  const maxRow = clientes.getMaxRows();
+  if (maxRow >= 2) {
+    const existing = clientes.getRange(2, idColIdx, maxRow - 1, 1).getValues();
     const dup = existing.find(r => String(r[0]).trim() === idCliente);
     if (dup) return { ok: false, error: `ID '${idCliente}' ya existe en clientes` };
   }
 
-  // Insert cliente row. saldo_actual queda como formula (no escribimos esa columna).
-  // appendRow no respeta formulas existentes en la columna saldo_actual, asi que escribimos
-  // columna por columna excepto saldo_actual. Pero appendRow escribe TODA la fila.
-  // Solucion: appendRow con saldo_actual vacio, despues la formula se reaplica automaticamente
-  // gracias a setupFormulas (que ya prellena las filas 2-5000). Como la fila nueva ya tiene
-  // formula preparada, appendRow va a pisarla con vacio. Hay que volver a setear la formula
-  // despues. Solucion mas simple: NO escribir esa columna usando setValues en lugar de appendRow.
-
+  // Como saldo_actual tiene formula prellenada (rows 2-5000), getLastRow()
+  // no sirve para encontrar la siguiente fila libre. Usamos nextEmptyRow
+  // que busca la primera celda vacia en la columna id_cliente.
   const headers = getSchemaFor('clientes').headers;
   const colSaldo = getColumnIndex('clientes', 'saldo_actual');
-  const targetRow = clientes.getLastRow() + 1;
+  const targetRow = nextEmptyRow(clientes, 'id_cliente');
 
   // Construir array completo de la fila (sin tocar la columna de saldo_actual)
   const rowValues = [
@@ -104,8 +101,67 @@ function asignarFolioLedger() {
 
 function contarClientesActivos() {
   const clientes = getSheet('clientes');
-  if (clientes.getLastRow() < 2) return 0;
+  const idColIdx = getColumnIndex('clientes', 'id_cliente');
   const activoCol = getColumnIndex('clientes', 'activo');
-  const rows = clientes.getRange(2, activoCol, clientes.getLastRow() - 1, 1).getValues();
-  return rows.filter(r => String(r[0]).toUpperCase() === 'SI').length;
+  const maxRow = clientes.getMaxRows();
+  if (maxRow < 2) return 0;
+  const ids = clientes.getRange(2, idColIdx, maxRow - 1, 1).getValues();
+  const activos = clientes.getRange(2, activoCol, maxRow - 1, 1).getValues();
+  let count = 0;
+  for (let i = 0; i < ids.length; i++) {
+    if (ids[i][0] !== '' && ids[i][0] !== null && String(activos[i][0]).toUpperCase() === 'SI') {
+      count++;
+    }
+  }
+  return count;
+}
+
+// Recovery: si la version anterior del formulario escribio clientes en filas muy abajo
+// (por el bug de getLastRow + formulas prellenadas), los mueve de regreso al inicio.
+function recuperarClientesOrfanos() {
+  const clientes = getSheet('clientes');
+  const idColIdx = getColumnIndex('clientes', 'id_cliente');
+  const colSaldo = getColumnIndex('clientes', 'saldo_actual');
+  const lastCol = clientes.getLastColumn();
+  const maxRow = clientes.getMaxRows();
+
+  // 1. Encontrar todos los renglones con id_cliente llenado (en cualquier fila)
+  const idValues = clientes.getRange(2, idColIdx, maxRow - 1, 1).getValues();
+  const sourceRows = [];
+  idValues.forEach((row, i) => {
+    if (row[0] !== '' && row[0] !== null) sourceRows.push(i + 2);
+  });
+
+  if (sourceRows.length === 0) {
+    SpreadsheetApp.getActiveSpreadsheet().toast('No hay clientes que recuperar', 'Recovery', 3);
+    return;
+  }
+
+  // 2. Leer la data de cada renglon (toda la fila excepto saldo_actual)
+  const dataLeida = sourceRows.map(rowNum => {
+    return clientes.getRange(rowNum, 1, 1, lastCol).getValues()[0];
+  });
+
+  // 3. Limpiar los renglones origen, columna por columna excepto saldo_actual
+  sourceRows.forEach(rowNum => {
+    for (let c = 1; c <= lastCol; c++) {
+      if (c === colSaldo) continue;
+      clientes.getRange(rowNum, c).setValue('');
+    }
+  });
+
+  // 4. Reescribir los datos al inicio (filas 2, 3, 4...) saltando saldo_actual
+  dataLeida.forEach((rowData, idx) => {
+    const targetRow = idx + 2;
+    for (let c = 0; c < lastCol; c++) {
+      if (c + 1 === colSaldo) continue;
+      clientes.getRange(targetRow, c + 1).setValue(rowData[c]);
+    }
+  });
+
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    `${sourceRows.length} cliente(s) recuperado(s) y compactado(s) al inicio`,
+    'Recovery',
+    5
+  );
 }

@@ -416,3 +416,45 @@ function test_guardarCliente_rechaza_saldo_sin_credito() {
   });
   assertTrue(!r.ok, 'cliente contado con saldo pendiente debe rechazarse');
 }
+
+// Reproduce el bug donde setupFormulas() prellena formulas hasta fila 5000,
+// haciendo que getLastRow() devuelva 5000 y guardarCliente escriba fuera del area visible.
+// Con el fix, el cliente debe quedar en la fila 2.
+function test_guardarCliente_respeta_formulas_prellenadas() {
+  createSheets();
+  setupFormulas(); // <-- crucial: simula el estado real de produccion
+  const clientes = getSheet('clientes');
+  // Limpiar cualquier id_cliente en la columna (formulas en saldo_actual se quedan)
+  const idColIdx = getColumnIndex('clientes', 'id_cliente');
+  const maxRow = clientes.getMaxRows();
+  clientes.getRange(2, idColIdx, maxRow - 1, 1).clearContent();
+
+  const r = guardarClienteDesdeFormulario({
+    id_cliente: 'JAQUI', nombre: 'Jaqui', contacto: '614-555-0001',
+    tipo: 'credito', limite_credito: 3000, saldo_pendiente: 0, activo: 'SI'
+  });
+  assertTrue(r.ok, 'cliente debe guardarse aun con formulas prellenadas');
+
+  // El cliente debe estar en la fila 2 (no en la 5001)
+  const jaquiEnFila2 = clientes.getRange(2, idColIdx).getValue();
+  assertEqual(jaquiEnFila2, 'JAQUI', 'cliente debe quedar en fila 2, no fila 5001');
+}
+
+function test_recuperarClientesOrfanos_mueve_filas_abajo_arriba() {
+  createSheets();
+  const clientes = getSheet('clientes');
+  const idColIdx = getColumnIndex('clientes', 'id_cliente');
+  const nombreColIdx = getColumnIndex('clientes', 'nombre');
+  const maxRow = clientes.getMaxRows();
+  clientes.getRange(2, 1, maxRow - 1, clientes.getLastColumn()).clearContent();
+
+  // Simular bug: cliente escrito en fila 5001 (huerfano)
+  clientes.getRange(5001, idColIdx).setValue('JAQUI');
+  clientes.getRange(5001, nombreColIdx).setValue('Jaqui');
+
+  recuperarClientesOrfanos();
+
+  assertEqual(clientes.getRange(2, idColIdx).getValue(), 'JAQUI', 'Jaqui debe estar en fila 2');
+  assertEqual(clientes.getRange(2, nombreColIdx).getValue(), 'Jaqui');
+  assertEqual(clientes.getRange(5001, idColIdx).getValue(), '', 'fila 5001 debe quedar vacia');
+}

@@ -24,6 +24,7 @@ function onOpen() {
         .addItem('Aplicar formulas', 'setupFormulas')
         .addItem('Config: defaults', 'setConfigDefaults')
         .addItem('Instalar trigger folios', 'installFolioTrigger')
+        .addItem('Recuperar clientes huerfanos', 'recuperarClientesOrfanos')
         .addItem('Correr todos los tests', 'runAllTests')
     )
     .addToUi();
