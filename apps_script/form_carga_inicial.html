@@ -24,8 +24,10 @@
   </div>
   <form id="form">
     <div class="row">
-      <label>SKU *</label>
-      <input type="text" id="sku" required autocomplete="off" autofocus />
+      <label>SKU * <span style="font-weight:normal; color:#666">(escribe para buscar)</span></label>
+      <input type="text" id="sku" list="sku-list" required autocomplete="off" autofocus placeholder="ej. AZUK-900" />
+      <datalist id="sku-list"></datalist>
+      <div id="sku-nombre" style="font-size:12px; color:#1e8e3e; margin-top:3px; min-height:16px;"></div>
     </div>
     <div class="row">
       <label>Lote *</label>
@@ -120,6 +122,36 @@
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
+
+    // Cargar productos en el datalist + indice nombre por SKU
+    let productosIndex = {};
+    google.script.run
+      .withSuccessHandler(function(productos) {
+        const dl = document.getElementById('sku-list');
+        productos.forEach(p => {
+          productosIndex[p.sku] = p.nombre;
+          const opt = document.createElement('option');
+          opt.value = p.sku;
+          opt.label = p.nombre + (p.unidad ? ' (' + p.unidad + ')' : '');
+          dl.appendChild(opt);
+        });
+      })
+      .listarProductosActivos();
+
+    // Cuando el usuario selecciona/escribe un SKU, mostrar el nombre debajo
+    document.getElementById('sku').addEventListener('input', function() {
+      const sku = this.value.trim();
+      const nombreDiv = document.getElementById('sku-nombre');
+      if (productosIndex[sku]) {
+        nombreDiv.textContent = '✓ ' + productosIndex[sku];
+      } else {
+        nombreDiv.textContent = sku ? 'SKU no encontrado en productos' : '';
+        nombreDiv.style.color = sku ? '#c5221f' : '#1e8e3e';
+      }
+      if (productosIndex[sku]) nombreDiv.style.color = '#1e8e3e';
+    });
+
+    actualizarContador();
   </script>
 </body>
 </html>

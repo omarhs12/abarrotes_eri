@@ -53,8 +53,9 @@ function setupValidations() {
   });
 
   setupValidacionesLedger();
+  setupValidacionesSKU();
 
-  Logger.log(`setupValidations: validaciones aplicadas en ${Object.keys(VALIDATIONS).length} hojas + ledger dinamico`);
+  Logger.log(`setupValidations: validaciones aplicadas en ${Object.keys(VALIDATIONS).length} hojas + ledger dinamico + SKU dinamico`);
 }
 
 // Validaciones especiales de ledger_credito:
@@ -85,4 +86,28 @@ function setupValidacionesLedger() {
     .setHelpText('Sugerencias: Inicial / abono / cargo. Tambien puedes escribir libre (ej. "transferencia 12345", V-1)')
     .build();
   ledger.getRange(2, colRef, MAX_ROWS_FOR_VALIDATION - 1, 1).setDataValidation(refRule);
+}
+
+// Dropdown dinamico de SKU en hojas que referencian productos:
+//   - compras_detalle.sku
+//   - ventas_detalle.sku
+//   - inventario.sku (aunque sea derivada, mantiene consistencia visual)
+function setupValidacionesSKU() {
+  const productos = getSheetOrNull('productos');
+  if (!productos) return;
+
+  const skuColIdx = getColumnIndex('productos', 'sku');
+  const skuRange = productos.getRange(2, skuColIdx, productos.getMaxRows() - 1, 1);
+  const skuRule = SpreadsheetApp.newDataValidation()
+    .requireValueInRange(skuRange, true)
+    .setAllowInvalid(false)
+    .setHelpText('Selecciona un SKU existente de productos')
+    .build();
+
+  ['compras_detalle', 'ventas_detalle', 'inventario'].forEach(sheetName => {
+    const sheet = getSheetOrNull(sheetName);
+    if (!sheet) return;
+    const colIdx = getColumnIndex(sheetName, 'sku');
+    sheet.getRange(2, colIdx, MAX_ROWS_FOR_VALIDATION - 1, 1).setDataValidation(skuRule);
+  });
 }

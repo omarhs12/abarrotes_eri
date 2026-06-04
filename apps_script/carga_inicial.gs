@@ -103,3 +103,19 @@ function contarLineasCargaInicialHoy() {
   const rows = comprasDet.getRange(2, 1, comprasDet.getLastRow() - 1, comprasDet.getLastColumn()).getValues();
   return rows.filter(r => r[0] === idCompra).length;
 }
+
+// Helper para autocompletar SKU en formularios. Devuelve array de { sku, nombre, unidad }
+// solo de productos activos, ordenados por nombre.
+function listarProductosActivos() {
+  const productos = getSheet('productos');
+  if (productos.getLastRow() < 2) return [];
+  const colSku = getColumnIndex('productos', 'sku') - 1;
+  const colNombre = getColumnIndex('productos', 'nombre') - 1;
+  const colUnidad = getColumnIndex('productos', 'unidad_venta') - 1;
+  const colActivo = getColumnIndex('productos', 'activo') - 1;
+  const rows = productos.getRange(2, 1, productos.getLastRow() - 1, productos.getLastColumn()).getValues();
+  return rows
+    .filter(r => r[colSku] && String(r[colActivo]).toUpperCase() === 'SI')
+    .map(r => ({ sku: String(r[colSku]), nombre: String(r[colNombre]), unidad: String(r[colUnidad] || '') }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
