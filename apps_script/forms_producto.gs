@@ -35,42 +35,6 @@ function guardarProductoDesdeFormulario(data) {
   return { ok: true, sku: sku, nombre: nombre };
 }
 
-// Migracion: copia nombre -> sku para todos los productos.
-// Idempotente: solo actualiza filas donde sku != nombre.
-function migrarSkuAlNombre() {
-  const ui = SpreadsheetApp.getUi();
-  const response = ui.alert(
-    'Migrar SKU = Nombre',
-    'Esta accion copia la columna "nombre" a la columna "sku" en todos los productos. ' +
-    'Si tienes compras o ventas registradas que referencian los SKU actuales, esas referencias quedaran rotas (avisa primero).\n\n' +
-    'Continuar?',
-    ui.ButtonSet.YES_NO
-  );
-  if (response !== ui.Button.YES) return;
-
-  const productos = getSheet('productos');
-  if (productos.getLastRow() < 2) {
-    ui.alert('Sin productos para migrar.');
-    return;
-  }
-
-  const colSku = getColumnIndex('productos', 'sku');
-  const colNombre = getColumnIndex('productos', 'nombre');
-  const rows = productos.getRange(2, 1, productos.getLastRow() - 1, productos.getLastColumn()).getValues();
-
-  let cambios = 0;
-  rows.forEach((row, i) => {
-    const sku = String(row[colSku - 1] || '').trim();
-    const nombre = String(row[colNombre - 1] || '').trim();
-    if (nombre && sku !== nombre) {
-      productos.getRange(i + 2, colSku).setValue(nombre);
-      cambios++;
-    }
-  });
-
-  ui.alert(`${cambios} producto(s) migrado(s). El SKU ahora es igual al nombre.`);
-}
-
 function contarProductosActivos() {
   const productos = getSheet('productos');
   if (productos.getLastRow() < 2) return 0;
