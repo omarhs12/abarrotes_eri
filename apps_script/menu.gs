@@ -8,7 +8,12 @@ function onOpen() {
     .addItem('Recalcular inventario', 'recalcularInventario')
     .addItem('Recalcular saldos', 'recalcularSaldos')
     .addItem('Alertas de caducidad', 'mostrarAlertasCaducidad')
-    .addItem('Lista de precios (WhatsApp)', 'exportarListaPrecios')
+    .addSubMenu(
+      SpreadsheetApp.getUi().createMenu('Lista de precios')
+        .addItem('WhatsApp (texto)', 'exportarListaPrecios')
+        .addItem('PDF (subir a Drive)', 'exportarListaPreciosPDF')
+        .addItem('Imprimir (hoja formateada)', 'abrirListaPreciosImprimir')
+    )
     .addSeparator()
     .addSubMenu(
       SpreadsheetApp.getUi().createMenu('Ordenar A-Z')
