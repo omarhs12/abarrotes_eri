@@ -153,3 +153,23 @@ function generarPedidoImprimible(lineas) {
 
   return print;
 }
+
+function abrirFormularioPedido() {
+  const html = HtmlService.createHtmlOutputFromFile('form_pedido')
+    .setWidth(640)
+    .setHeight(620);
+  SpreadsheetApp.getUi().showModalDialog(html, 'Nuevo pedido');
+}
+
+// Llamado desde el frontend cuando el usuario aprieta WhatsApp.
+function ticketPedidoParaWhatsApp(lineas) {
+  return generarTicketPedidoTexto(lineas || []);
+}
+
+// Llamado desde el frontend cuando aprieta Imprimir.
+// Genera la hoja, la activa, y devuelve el nombre para que el frontend cierre el dialogo.
+function imprimirPedido(lineas) {
+  const sheet = generarPedidoImprimible(lineas || []);
+  SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(sheet);
+  return { ok: true, sheetName: sheet.getName() };
+}
