@@ -84,3 +84,72 @@ function generarTicketPedidoTexto(lineas) {
 function pad2(n) {
   return String(n).padStart(2, '0');
 }
+
+const PEDIDO_PRINT_SHEET = '_pedido_print';
+
+// Crea/reescribe la hoja `_pedido_print` con el pedido formateado.
+function generarPedidoImprimible(lineas) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let print = ss.getSheetByName(PEDIDO_PRINT_SHEET);
+  if (!print) {
+    print = ss.insertSheet(PEDIDO_PRINT_SHEET);
+  }
+  print.clear();
+
+  const nombreNegocio = leerConfig('nombre_negocio', 'Abarrotes Eri');
+  const today = new Date();
+  const fecha = `${pad2(today.getDate())}/${pad2(today.getMonth() + 1)}/${today.getFullYear()}`;
+
+  // Header
+  print.getRange(1, 1).setValue(nombreNegocio.toUpperCase());
+  print.getRange(1, 1, 1, 4).merge()
+    .setFontSize(18).setFontWeight('bold').setHorizontalAlignment('center')
+    .setBackground('#fef7e0');
+
+  print.getRange(2, 1).setValue(`Pedido del ${fecha}`);
+  print.getRange(2, 1, 1, 4).merge()
+    .setFontSize(11).setFontStyle('italic').setHorizontalAlignment('center');
+
+  // Tabla header
+  print.getRange(4, 1).setValue('Cant').setFontWeight('bold').setHorizontalAlignment('center');
+  print.getRange(4, 2).setValue('Producto').setFontWeight('bold');
+  print.getRange(4, 3).setValue('P. Unit').setFontWeight('bold').setHorizontalAlignment('right');
+  print.getRange(4, 4).setValue('Subtotal').setFontWeight('bold').setHorizontalAlignment('right');
+  print.getRange(4, 1, 1, 4).setBackground('#e6f4ea').setBorder(true, true, true, true, false, false);
+
+  // Lineas
+  let row = 5;
+  let total = 0;
+  (lineas || []).forEach(l => {
+    const cantidad = Number(l.cantidad) || 0;
+    const precio = Number(l.precio) || 0;
+    const subtotal = cantidad * precio;
+    total += subtotal;
+    print.getRange(row, 1).setValue(cantidad).setHorizontalAlignment('center');
+    print.getRange(row, 2).setValue(String(l.nombre || ''));
+    print.getRange(row, 3).setValue(precio).setNumberFormat('"$"#,##0.00').setHorizontalAlignment('right');
+    print.getRange(row, 4).setValue(subtotal).setNumberFormat('"$"#,##0.00').setHorizontalAlignment('right');
+    row++;
+  });
+
+  // Total
+  row++;
+  print.getRange(row, 3).setValue('TOTAL:').setFontWeight('bold').setHorizontalAlignment('right');
+  print.getRange(row, 4).setValue(total).setNumberFormat('"$"#,##0.00')
+    .setFontWeight('bold').setFontSize(13).setHorizontalAlignment('right');
+
+  // Footer
+  row += 2;
+  print.getRange(row, 1).setValue('Gracias por su compra');
+  print.getRange(row, 1, 1, 4).merge()
+    .setFontStyle('italic').setHorizontalAlignment('center');
+
+  // Anchos
+  print.setColumnWidth(1, 50);
+  print.setColumnWidth(2, 320);
+  print.setColumnWidth(3, 90);
+  print.setColumnWidth(4, 100);
+  print.setHiddenGridlines(true);
+
+  return print;
+}
