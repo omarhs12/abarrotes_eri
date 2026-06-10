@@ -161,6 +161,15 @@ function abrirFormularioPedido() {
   SpreadsheetApp.getUi().showModalDialog(html, 'Nuevo pedido');
 }
 
+// Web App entry point — sirve el mismo form como URL accesible desde celular.
+// Deploy: clasp deploy → URL https://script.google.com/macros/s/.../exec
+function doGet() {
+  return HtmlService.createHtmlOutputFromFile('form_pedido')
+    .setTitle('Abarrotes Eri - Nuevo pedido')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
 // Llamado desde el frontend cuando el usuario aprieta WhatsApp.
 function ticketPedidoParaWhatsApp(lineas) {
   return generarTicketPedidoTexto(lineas || []);
