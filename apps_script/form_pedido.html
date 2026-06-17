@@ -4,21 +4,40 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <style>
-    * { -webkit-tap-highlight-color: transparent; }
-    body { font-family: Arial, sans-serif; padding: 8px; font-size: 14px; margin: 0; }
-    .top { position: sticky; top: 0; background: white; padding: 8px 0; border-bottom: 1px solid #eee; z-index: 2; }
-    #search { width: 100%; padding: 10px; box-sizing: border-box; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; padding: 8px; font-size: 14px; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+    .top { background: white; padding: 8px 0; border-bottom: 1px solid #eee; flex-shrink: 0; }
+    .search-wrap { position: relative; }
+    #search { width: 100%; padding: 10px 40px 10px 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; }
+    #btnClearSearch { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 30px; height: 30px; border: none; background: #e0e0e0; border-radius: 50%; font-size: 14px; color: #444; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; }
+    #btnClearSearch:active { background: #bbb; }
+    #cliente { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 6px; background: white; }
+    .main { display: flex; gap: 12px; flex: 1; min-height: 0; margin-top: 8px; }
+    .catalogo { flex: 1; overflow-y: auto; min-width: 0; }
+    .cart { width: 290px; flex-shrink: 0; overflow-y: auto; border-left: 2px solid #4285f4; padding-left: 10px; }
+    .cart-title { font-size: 12px; text-transform: uppercase; color: #555; margin: 4px 0 8px; font-weight: bold; letter-spacing: 0.5px; }
+    .cart-list { list-style: none; padding: 0; margin: 0; }
+    .cart-list li { display: flex; align-items: center; gap: 6px; padding: 6px 2px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+    .cart-cant { background: #e6f4ea; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 30px; text-align: center; color: #137333; }
+    .cart-nombre { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cart-sub { color: #1e8e3e; font-weight: bold; white-space: nowrap; }
+    .cart-x { background: none; border: none; color: #c5221f; font-size: 14px; cursor: pointer; padding: 2px 6px; line-height: 1; }
+    .cart-x:active { background: #fce8e6; border-radius: 4px; }
+    .cart-empty { color: #999; font-style: italic; padding: 12px 4px; text-align: center; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; }
     th, td { padding: 8px 4px; border-bottom: 1px solid #eee; text-align: left; font-size: 14px; vertical-align: middle; }
-    th { background: #f8f9fa; font-size: 12px; text-transform: uppercase; color: #555; }
+    th { background: #f8f9fa; font-size: 12px; text-transform: uppercase; color: #555; position: sticky; top: 0; z-index: 1; }
     .precio { text-align: right; white-space: nowrap; }
     .qty { width: 64px; text-align: center; padding: 8px 4px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
     .subtotal { text-align: right; white-space: nowrap; color: #1e8e3e; font-weight: bold; }
     .row-empty { color: #999; padding: 20px; text-align: center; }
-    .footer { position: sticky; bottom: 0; background: white; padding-top: 10px; border-top: 2px solid #4285f4; margin-top: 10px; z-index: 2; box-shadow: 0 -4px 8px rgba(0,0,0,0.04); }
+    .footer { background: white; padding-top: 10px; border-top: 2px solid #4285f4; margin-top: 8px; flex-shrink: 0; box-shadow: 0 -4px 8px rgba(0,0,0,0.04); }
     .total { font-size: 22px; font-weight: bold; text-align: right; padding: 8px 4px; }
+    .peso { font-size: 14px; text-align: right; padding: 0 4px 4px; color: #555; }
+    .peso.warn { color: #f9ab00; font-weight: bold; }
+    .peso.over { color: #c5221f; font-weight: bold; }
     .btns { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-    .btn { padding: 12px 10px; cursor: pointer; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; flex: 1 1 100px; text-align: center; text-decoration: none; display: inline-block; box-sizing: border-box; -webkit-appearance: none; appearance: none; }
+    .btn { padding: 12px 10px; cursor: pointer; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; flex: 1 1 100px; text-align: center; text-decoration: none; display: inline-block; -webkit-appearance: none; appearance: none; }
     .btn-wa { background: #25D366; color: white; border-color: #25D366; font-weight: bold; }
     .btn-primary { background: #4285f4; color: white; border-color: #4285f4; }
     .btn-secondary { background: #fff; color: #333; }
@@ -29,24 +48,49 @@
     .err { color: #c5221f; }
     .cat-row td { background: #f1f3f4; font-weight: bold; padding-top: 10px; padding-bottom: 6px; font-size: 12px; text-transform: uppercase; color: #555; }
     .hide { display: none !important; }
+
+    @media (max-width: 720px) {
+      body { height: auto; min-height: 100vh; }
+      .top { position: sticky; top: 0; z-index: 2; }
+      .main { flex-direction: column; }
+      .catalogo { overflow-y: visible; }
+      .cart { width: 100%; border-left: none; border-top: 2px solid #4285f4; padding-left: 0; padding-top: 8px; max-height: 220px; }
+      .footer { position: sticky; bottom: 0; }
+    }
   </style>
 </head>
 <body>
   <div class="top">
-    <input id="search" type="text" placeholder="Buscar producto..." autocomplete="off" />
+    <select id="cliente">
+      <option value="">— Sin cliente / escribir a mano —</option>
+    </select>
+    <div class="search-wrap">
+      <input id="search" type="text" placeholder="Buscar producto..." autocomplete="off" />
+      <button id="btnClearSearch" type="button" class="hide" onclick="clearSearch()" aria-label="Borrar busqueda">✕</button>
+    </div>
   </div>
 
-  <div id="loading" style="padding: 20px; text-align: center; color: #666;">Cargando catalogo...</div>
-
-  <table id="tbl" style="display: none;">
-    <thead>
-      <tr><th>Producto</th><th class="precio">P.Unit</th><th>Cant</th><th class="precio">Subtotal</th></tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+  <div class="main">
+    <div class="catalogo">
+      <div id="loading" style="padding: 20px; text-align: center; color: #666;">Cargando catalogo...</div>
+      <table id="tbl" style="display: none;">
+        <thead>
+          <tr><th>Producto</th><th class="precio">P.Unit</th><th>Cant</th><th class="precio">Subtotal</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <aside class="cart">
+      <div class="cart-title">En el pedido</div>
+      <ul class="cart-list" id="cartList">
+        <li class="cart-empty">Sin productos</li>
+      </ul>
+    </aside>
+  </div>
 
   <div class="footer">
     <div class="total">Total: <span id="total">$0.00</span></div>
+    <div class="peso" id="pesoLine">Peso: <span id="pesoVal">0.00</span> / <span id="pesoMax">600</span> kg</div>
     <div class="status" id="status">Captura cantidades; el total se actualiza en vivo.</div>
     <div class="btns">
       <a class="btn btn-wa disabled" id="btnWA" href="#" target="_blank" rel="noopener" onclick="onClickWA(event)">WhatsApp</a>
@@ -62,9 +106,10 @@
     const isModal = !!(window.google && window.google.script && window.google.script.host && typeof window.google.script.host.close === 'function');
     const isWebApp = !isModal;
 
-    let CATALOGO = []; // [{nombre, categoria, precio, activo}]
+    let CATALOGO = []; // [{nombre, categoria, precio, peso, activo}]
     const cantidades = {}; // nombre -> cantidad numerica
     const NOMBRE_NEGOCIO = 'Abarrotes Eri';
+    const PESO_MAX_KG = 600; // capacidad pickup
 
     // Ajustar UI segun contexto
     if (isWebApp) {
@@ -82,12 +127,40 @@
       })
       .cargarCatalogoActivos();
 
+    google.script.run
+      .withSuccessHandler(onClientes)
+      .withFailureHandler(() => { /* silencioso: si no hay clientes el dropdown queda con solo la opcion vacia */ })
+      .cargarClientesActivos();
+
+    function onClientes(nombres) {
+      const sel = document.getElementById('cliente');
+      (nombres || []).forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        sel.appendChild(opt);
+      });
+    }
+
     function onCatalogo(items) {
       CATALOGO = items || [];
       document.getElementById('loading').style.display = 'none';
       document.getElementById('tbl').style.display = '';
       render();
-      document.getElementById('search').addEventListener('input', render);
+      document.getElementById('search').addEventListener('input', onSearchInput);
+    }
+
+    function onSearchInput() {
+      const v = document.getElementById('search').value;
+      document.getElementById('btnClearSearch').classList.toggle('hide', !v.length);
+      render();
+    }
+
+    function clearSearch() {
+      document.getElementById('search').value = '';
+      document.getElementById('btnClearSearch').classList.add('hide');
+      document.getElementById('search').focus();
+      render();
     }
 
     function render() {
@@ -146,14 +219,86 @@
 
     function actualizarTotal() {
       let total = 0;
+      let totalKg = 0;
       CATALOGO.forEach(it => {
         const c = Number(cantidades[it.nombre]) || 0;
         total += c * it.precio;
+        totalKg += c * (it.peso || 0);
       });
       document.getElementById('total').textContent = '$' + fmt(total);
+      document.getElementById('pesoVal').textContent = fmt(totalKg);
+      document.getElementById('pesoMax').textContent = PESO_MAX_KG;
+
+      const pesoEl = document.getElementById('pesoLine');
+      pesoEl.classList.remove('warn', 'over');
+      if (totalKg > PESO_MAX_KG) {
+        pesoEl.classList.add('over');
+      } else if (totalKg > PESO_MAX_KG * 0.9) {
+        pesoEl.classList.add('warn');
+      }
+
       const tieneLineas = Object.keys(cantidades).length > 0;
       document.getElementById('btnCopy').disabled = !tieneLineas;
       document.getElementById('btnPrint').disabled = !tieneLineas;
+
+      renderCart();
+    }
+
+    function renderCart() {
+      const ul = document.getElementById('cartList');
+      const nombres = Object.keys(cantidades);
+      ul.innerHTML = '';
+      if (!nombres.length) {
+        const li = document.createElement('li');
+        li.className = 'cart-empty';
+        li.textContent = 'Sin productos';
+        ul.appendChild(li);
+        return;
+      }
+      nombres.forEach(nombre => {
+        const it = CATALOGO.find(x => x.nombre === nombre);
+        const cant = cantidades[nombre];
+        const precio = it ? it.precio : 0;
+        const li = document.createElement('li');
+        const cantSpan = document.createElement('span');
+        cantSpan.className = 'cart-cant';
+        cantSpan.textContent = cant;
+        const nombreSpan = document.createElement('span');
+        nombreSpan.className = 'cart-nombre';
+        nombreSpan.textContent = nombre;
+        nombreSpan.title = nombre;
+        const subSpan = document.createElement('span');
+        subSpan.className = 'cart-sub';
+        subSpan.textContent = '$' + fmt(cant * precio);
+        const xBtn = document.createElement('button');
+        xBtn.className = 'cart-x';
+        xBtn.type = 'button';
+        xBtn.textContent = '✕';
+        xBtn.title = 'Quitar';
+        xBtn.addEventListener('click', () => quitarDeCart(nombre));
+        li.appendChild(cantSpan);
+        li.appendChild(nombreSpan);
+        li.appendChild(subSpan);
+        li.appendChild(xBtn);
+        ul.appendChild(li);
+      });
+    }
+
+    function quitarDeCart(nombre) {
+      delete cantidades[nombre];
+      // Refrescar la celda del input correspondiente si esta visible en el catalogo
+      const inp = document.querySelector('input.qty[data-nombre="' + cssEscape(nombre) + '"]');
+      if (inp) {
+        inp.value = '';
+        const tr = inp.closest('tr');
+        if (tr) tr.querySelector('.subtotal').textContent = '';
+      }
+      actualizarTotal();
+      actualizarBotonWA();
+    }
+
+    function cssEscape(s) {
+      return String(s).replace(/(["\\])/g, '\\$1');
     }
 
     // Actualiza el href del boton WhatsApp en tiempo real (sync click → abre app).
@@ -183,6 +328,7 @@
         // Limpiar y empezar de nuevo
         for (const k in cantidades) delete cantidades[k];
         document.getElementById('search').value = '';
+        document.getElementById('cliente').value = '';
         render();
         actualizarBotonWA();
         setStatus('Pedido limpiado.', '');
@@ -222,18 +368,26 @@
       btn.disabled = true;
       const lineas = Object.keys(cantidades).map(nombre => {
         const it = CATALOGO.find(x => x.nombre === nombre);
-        return { nombre: nombre, precio: it ? it.precio : 0, cantidad: cantidades[nombre] };
+        return { nombre: nombre, precio: it ? it.precio : 0, peso: it ? it.peso : 0, cantidad: cantidades[nombre] };
       });
+      const cliente = document.getElementById('cliente').value || '';
       google.script.run
         .withSuccessHandler(res => {
-          setStatus('Hoja "' + res.sheetName + '" lista. Cierro y haz Ctrl+P.', 'copied');
-          setTimeout(() => google.script.host.close(), 1200);
+          setStatus('Pedido agregado a "' + res.sheetName + '". Listo para el siguiente.', 'copied');
+          // Limpiar para el siguiente pedido (sin cerrar el modal)
+          for (const k in cantidades) delete cantidades[k];
+          document.getElementById('search').value = '';
+          document.getElementById('cliente').value = '';
+          document.getElementById('btnClearSearch').classList.add('hide');
+          render();
+          actualizarBotonWA();
+          window.scrollTo(0, 0);
         })
         .withFailureHandler(err => {
           setStatus('Error: ' + (err.message || err), 'err');
           btn.disabled = false;
         })
-        .imprimirPedido(lineas);
+        .imprimirPedido(lineas, cliente);
     }
 
     // Genera el texto del ticket en cliente (mismo formato que el backend).
@@ -250,9 +404,10 @@
       const items = nombres.map(nombre => {
         const it = CATALOGO.find(x => x.nombre === nombre);
         const precio = it ? it.precio : 0;
+        const peso = it ? it.peso : 0;
         const cantidad = cantidades[nombre];
         const display = nombre.length > MAX_NAME ? nombre.slice(0, MAX_NAME - 1) + '…' : nombre;
-        return { display, cantidad, subtotal: cantidad * precio };
+        return { display, cantidad, subtotal: cantidad * precio, kg: cantidad * peso };
       });
 
       const prefixes = items.map(it => '• ' + it.cantidad + ' x ' + it.display);
@@ -265,6 +420,7 @@
       });
 
       const total = items.reduce((s, it) => s + it.subtotal, 0);
+      const totalKg = items.reduce((s, it) => s + it.kg, 0);
 
       return [
         '*' + NOMBRE_NEGOCIO + '*',
@@ -272,7 +428,8 @@
         '',
         ...lineasTxt,
         '',
-        '*Total: $' + fmt(total) + '*'
+        '*Total: $' + fmt(total) + '*',
+        'Peso: ' + fmt(totalKg) + ' kg'
       ].join('\n');
     }
 
